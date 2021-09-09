@@ -1,0 +1,112 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/base1.css">
+  </head>
+
+  <body>
+    Level <input type="text" id="int_peak" value="200" size="3">Å@200 ëÂ=à’---------è¨=ìÔ 20<br />
+    <input type="file" id="file_slct"><br />
+    <audio id="auo" ></audio><br />
+    <input type="hidden" id="blk_count" value="0">
+    <div class="box" id="box"></div>
+  </body>
+
+  <footer>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+      var str_id = 0
+      var int_wait=0
+      //****************************
+      async function put_red_mark1(){
+        var div2 = document.createElement('div');
+        div2.classList.add('block2');
+        div2.innerHTML="<div class='block1'></div>"
+        div2.id="b" + str_id
+        box.appendChild(div2);
+        $("#b" + str_id).animate({"left": "-=340px"}, 2000,"linear",function(){$(this).remove();});
+        str_id=parseInt(blk_count.value)+1
+        blk_count.value=str_id
+        int_wait=1
+        await sleep(200);
+        int_wait=0
+      }
+
+      //****************************
+      var wm = new WeakMap();
+      var audioSource;
+      //********************************************************
+      //const file_slct = document.querySelector('#file_slct');
+      async function convertAudioFileToDataUrl(file) {
+        const reader = new FileReader();
+        const loadPromise = new Promise((resolve, reject) => {
+          reader.onload = (event) => {
+            resolve(event.target.result);
+          };
+        });
+        reader.readAsDataURL(file);
+        return loadPromise;
+      }
+
+
+
+      //*************************************//
+      function sleep(m_second) {
+          return new Promise(resolve => {
+              setTimeout(() => {
+                  resolve()
+              }, m_second)
+          })
+          console.log("slpx")
+      }
+
+
+
+
+      //******************************
+      file_slct.addEventListener('change', async (event) => {
+        var audioctx = new AudioContext();
+        const file = file_slct.files[0];
+        auo.src = await convertAudioFileToDataUrl(file);
+        audioSource = audioctx.createMediaElementSource(auo);
+        auo.play()
+
+        //timer_intvl=setInterval(timer_handler, 1000 ) ;
+
+
+        var processor = audioctx.createScriptProcessor(256,1,1);
+        audioSource.connect(processor);
+        processor.connect(audioctx.destination);
+        audioSource.connect(audioctx.destination);
+        var int_peak=0
+
+        processor.onaudioprocess = function(e){
+
+          if (int_wait==0){
+            var amp = e.inputBuffer.getChannelData(0);
+            const reducer = (accumulator, currentValue) => accumulator + Math.abs(currentValue);
+            int_peak=amp.reduce(reducer) / amp.length * 800
+            //document.getElementById('bar').style.width = '' + (int_peak) + 'px';
+            if(auo.paused){
+              processor.disconnect();
+              audioSource.disconnect();
+              auo.src='';
+            }else{
+              if(int_peak > document.getElementById("int_peak").value){
+                //????log??
+                //console.log(int_peak)
+                put_red_mark1("b" + blk_count.value);
+              }
+            }
+          }else{
+
+            //console.log("skip")
+          }
+
+        };
+      })
+
+
+
+    </script>
+  </footer>
+</html>
